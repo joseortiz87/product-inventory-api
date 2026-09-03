@@ -73,6 +73,7 @@ The import is **atomic**: if any row fails, nothing is written and every problem
 | `POST` | `/api/products/import` | Multipart upload, field `file`. Returns `201` with `{fileName, importedRows, totalProducts}`. |
 | `GET` | `/api/products?page=0&size=20&sort=stockAge,desc` | Paginated listing. Sortable: `sku`, `name`, `category`, `purchaseDate`, `unitPrice`, `quantity`, `stockAge`. |
 | `GET` | `/api/products/summary` | `{totalProducts, totalInventoryValue, averageStockAgeDays, oldestPurchaseDate, newestPurchaseDate}` |
+| `DELETE` | `/api/products/{id}` | Deletes one product. `404` with `PRODUCT_NOT_FOUND` when the id does not exist. |
 | `DELETE` | `/api/products` | Clears the inventory (demo convenience). |
 
 Each product carries `totalValue` (`unitPrice × quantity`) and `stockAgeDays` (days between purchase date and today), computed server-side so every client shows the same figures.
@@ -107,6 +108,7 @@ Every error, whether raised by the domain or by the framework, uses one envelope
 | `VALIDATION_ERROR` | 400 | One or more rows failed a rule |
 | `INVALID_FILE` | 400 | Missing/empty/oversized/unsupported/unreadable file, wrong headers, no data rows, too many rows |
 | `BAD_REQUEST` | 400 | Unknown sort field, page size over the limit |
+| `NOT_FOUND` | 404 | Deleting a product id that does not exist |
 | `INTERNAL_ERROR` | 500 | Anything unexpected; details are never leaked |
 
 All codes live in one enum, [`ErrorCode`](src/main/java/com/joseortiz/inventory/error/ErrorCode.java). Each constant has a message template whose `{placeholders}` are filled from the detail's `info` map, so adding a rule is a one-line constant plus the validator that raises it. The `info` map always includes `row`, `field` and `cell` where they apply, which lets a UI highlight the offending cell.
@@ -117,6 +119,7 @@ All codes live in one enum, [`ErrorCode`](src/main/java/com/joseortiz/inventory/
 controller   ProductController            REST surface, OpenAPI annotations
 service      ProductImportService         parse -> validate rows -> validate uniqueness -> persist (one transaction)
              ProductQueryService          paging, sort allow-list, summary
+             ProductCommandService        delete one / delete all
              ProductRowMapper             validated row -> entity
 validation   ValidationRule<T>            contract: returns a list of ErrorDetail, never throws
              ProductRowValidator          per-row value rules

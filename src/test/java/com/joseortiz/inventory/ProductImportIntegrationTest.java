@@ -70,6 +70,13 @@ class ProductImportIntegrationTest {
         .andExpect(jsonPath("$.error.details[*].code", hasItem("DUPLICATE_ENTRY_EXISTS")));
     assertThat(repository.count()).isEqualTo(16);
 
+    long firstId = repository.findAll().get(0).getId();
+    mvc.perform(delete("/api/products/" + firstId)).andExpect(status().isNoContent());
+    assertThat(repository.count()).isEqualTo(15);
+    mvc.perform(delete("/api/products/" + firstId))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.error.code").value("NOT_FOUND"));
+
     mvc.perform(delete("/api/products")).andExpect(status().isNoContent());
     assertThat(repository.count()).isZero();
   }

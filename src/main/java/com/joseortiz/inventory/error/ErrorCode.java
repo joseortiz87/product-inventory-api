@@ -24,6 +24,8 @@ public enum ErrorCode {
   INVALID_FILE("The uploaded file could not be processed.", HttpStatus.BAD_REQUEST),
   /** A request parameter was rejected. */
   BAD_REQUEST("The request is invalid.", HttpStatus.BAD_REQUEST),
+  /** The addressed resource does not exist. */
+  NOT_FOUND("The requested resource was not found.", HttpStatus.NOT_FOUND),
   /** Catch-all for unexpected failures. */
   INTERNAL_ERROR("An unexpected error occurred.", HttpStatus.INTERNAL_SERVER_ERROR),
 
@@ -58,6 +60,10 @@ public enum ErrorCode {
       "Row {row}: SKU '{sku}' with purchase date {purchaseDate} also appears on row {firstRow}."),
   DUPLICATE_ENTRY_EXISTS(
       "Row {row}: SKU '{sku}' with purchase date {purchaseDate} already exists in the inventory."),
+
+  // ---- Resource details ----------------------------------------------------------------------
+
+  PRODUCT_NOT_FOUND("Product {id} does not exist. It may have been deleted already."),
 
   // ---- Query details -------------------------------------------------------------------------
 

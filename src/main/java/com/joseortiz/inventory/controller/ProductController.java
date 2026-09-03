@@ -5,6 +5,7 @@ import com.joseortiz.inventory.dto.InventorySummaryResponse;
 import com.joseortiz.inventory.dto.PageResponse;
 import com.joseortiz.inventory.dto.ProductResponse;
 import com.joseortiz.inventory.error.ApiErrorResponse;
+import com.joseortiz.inventory.service.ProductCommandService;
 import com.joseortiz.inventory.service.ProductImportService;
 import com.joseortiz.inventory.service.ProductQueryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -35,16 +37,22 @@ public class ProductController {
 
   private final ProductImportService importService;
   private final ProductQueryService queryService;
+  private final ProductCommandService commandService;
 
   /**
    * Creates the controller.
    *
    * @param importService import use case
    * @param queryService read use cases
+   * @param commandService delete use cases
    */
-  public ProductController(ProductImportService importService, ProductQueryService queryService) {
+  public ProductController(
+      ProductImportService importService,
+      ProductQueryService queryService,
+      ProductCommandService commandService) {
     this.importService = importService;
     this.queryService = queryService;
+    this.commandService = commandService;
   }
 
   /**
@@ -108,6 +116,23 @@ public class ProductController {
   }
 
   /**
+   * Deletes one product.
+   *
+   * @param id product identifier
+   */
+  @Operation(summary = "Delete a product", description = "Removes a single product lot.")
+  @ApiResponse(responseCode = "204", description = "Product deleted")
+  @ApiResponse(
+      responseCode = "404",
+      description = "No product with that id",
+      content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+  @DeleteMapping("/{id}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void delete(@Parameter(description = "Product id") @PathVariable long id) {
+    commandService.delete(id);
+  }
+
+  /**
    * Deletes every product so a file can be imported again.
    */
   @Operation(summary = "Clear the inventory", description = "Deletes all products. Intended for demos.")
@@ -115,6 +140,6 @@ public class ProductController {
   @DeleteMapping
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void clear() {
-    queryService.deleteAll();
+    commandService.deleteAll();
   }
 }

@@ -117,14 +117,6 @@ public class ProductQueryService {
   }
 
   /**
-   * Removes every product. Exposed for demos and tests.
-   */
-  @Transactional
-  public void deleteAll() {
-    repository.deleteAllInBatch();
-  }
-
-  /**
    * Translates the client sort expression into a Spring Data sort.
    *
    * @param sort {@code field} or {@code field,direction}

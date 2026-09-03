@@ -3,6 +3,7 @@ package com.joseortiz.inventory.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -14,7 +15,9 @@ import com.joseortiz.inventory.dto.ImportResultResponse;
 import com.joseortiz.inventory.error.BadRequestException;
 import com.joseortiz.inventory.error.ErrorCode;
 import com.joseortiz.inventory.error.ErrorDetail;
+import com.joseortiz.inventory.error.NotFoundException;
 import com.joseortiz.inventory.error.ValidationException;
+import com.joseortiz.inventory.service.ProductCommandService;
 import com.joseortiz.inventory.service.ProductImportService;
 import com.joseortiz.inventory.service.ProductQueryService;
 import java.util.List;
@@ -32,6 +35,7 @@ class ProductControllerTest {
   @Autowired private MockMvc mvc;
   @MockitoBean private ProductImportService importService;
   @MockitoBean private ProductQueryService queryService;
+  @MockitoBean private ProductCommandService commandService;
 
   private static MockMultipartFile upload() {
     return new MockMultipartFile("file", "inventory.xlsx", "application/octet-stream", new byte[] {1});
@@ -106,5 +110,24 @@ class ProductControllerTest {
   @Test
   void clearReturns204() throws Exception {
     mvc.perform(delete("/api/products")).andExpect(status().isNoContent());
+  }
+
+  @Test
+  void deleteReturns204() throws Exception {
+    mvc.perform(delete("/api/products/7")).andExpect(status().isNoContent());
+  }
+
+  @Test
+  void deletingAMissingProductIsA404InTheSameEnvelope() throws Exception {
+    doThrow(NotFoundException.product(7)).when(commandService).delete(7);
+
+    mvc.perform(delete("/api/products/7"))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.error.code").value("NOT_FOUND"))
+        .andExpect(jsonPath("$.error.details[0].code").value("PRODUCT_NOT_FOUND"))
+        .andExpect(jsonPath("$.error.details[0].info.id").value(7))
+        .andExpect(
+            jsonPath("$.error.details[0].message")
+                .value("Product 7 does not exist. It may have been deleted already."));
   }
 }
