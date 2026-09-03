@@ -1,0 +1,44 @@
+# Runs the whole application: Spring Boot API + Angular UI.
+#
+#   docker compose up --build
+#
+# Expects the front-end repository checked out next to this one:
+#   ../product-inventory-ui   (https://github.com/joseortiz87/product-inventory-ui)
+#
+# UI  -> http://localhost:${UI_PORT:-4200}
+# API -> http://localhost:${API_PORT:-8080}   (Swagger UI at /swagger-ui.html)
+#
+# Override ports when they clash with something on your machine:
+#   API_PORT=9090 UI_PORT=3000 docker compose up --build
+services:
+  api:
+    build:
+      context: .
+    image: product-inventory-api:local
+    container_name: inventory-api
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      # The browser calls the API directly, so the UI origin must be allowed.
+      INVENTORY_CORS_ALLOWED_ORIGINS: "http://localhost:${UI_PORT:-4200},http://127.0.0.1:${UI_PORT:-4200}"
+      TZ: UTC
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  ui:
+    build:
+      context: ../product-inventory-ui
+    image: product-inventory-ui:local
+    container_name: inventory-ui
+    ports:
+      - "${UI_PORT:-4200}:80"
+    environment:
+      # Injected at container start into /config.json; the browser uses it to reach the API.
+      API_BASE_URL: "http://localhost:${API_PORT:-8080}"
+    depends_on:
+      api:
+        condition: service_healthy
